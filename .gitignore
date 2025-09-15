@@ -2,6 +2,9 @@
 __pycache__/
 *.py[codz]
 *$py.class
+# macOS junk files
+.DS_Store
+**/.DS_Store
 
 # C extensions
 *.so
