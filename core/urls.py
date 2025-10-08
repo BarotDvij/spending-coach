@@ -1,11 +1,16 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import hello_world, TransactionViewSet  # <-- import the function directly
+from core.views_summary import get_monthly_spend_summary
+from rest_framework import routers
+from .views import TransactionViewSet, BudgetViewSet, InsightViewSet
 
-router = DefaultRouter()
-router.register(r"api/transactions", TransactionViewSet, basename="transactions")
+router = routers.DefaultRouter()
+router.register(r'transactions', TransactionViewSet)
+router.register(r'budgets', BudgetViewSet)
+router.register(r'insights', InsightViewSet)
 
 urlpatterns = [
-    path("hello/", hello_world),   # <-- use the imported name, not views.hello_world
-    path("", include(router.urls)),
+    path("summary/", get_monthly_spend_summary, name="summary"),  # ✅ fixed name here
 ]
+
+urlpatterns += router.urls
+
