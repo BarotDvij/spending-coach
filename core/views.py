@@ -1,10 +1,8 @@
-from django.http import JsonResponse
 from rest_framework import viewsets, filters
 from .models import Transaction, Budget, Insight
 from .serializers import TransactionSerializer, BudgetSerializer, InsightSerializer
-
-def hello_world(request):
-    return JsonResponse({"message": "Hello, Spending Coach!"})
+from .tasks import compute_insights
+from datetime import date
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all().order_by("-date", "-id")
@@ -13,10 +11,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
     search_fields = ["description", "category"]
     ordering_fields = ["date", "amount", "created_at"]
 
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        d = obj.date or date.today()
+        compute_insights.delay(obj.user_id, d.year, d.month)
+
 class BudgetViewSet(viewsets.ModelViewSet):
-    queryset = Budget.objects.all()
+    queryset = Budget.objects.all().order_by("-year", "-month", "category")
     serializer_class = BudgetSerializer
 
-class InsightViewSet(viewsets.ModelViewSet):
-    queryset = Insight.objects.all()
+class InsightViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Insight.objects.all().order_by("-created_at")
     serializer_class = InsightSerializer
