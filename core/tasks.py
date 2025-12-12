@@ -4,6 +4,7 @@ from datetime import date
 from core.services.summary import get_monthly_summary
 from core.services.subscriptions import detect_subscriptions_for_month
 from core.services.insights import generate_budget_insights
+from core.logic.reward_engine import calculate_user_rewards
 
 @shared_task
 def compute_insights(user_id, year, month):
@@ -20,3 +21,9 @@ def compute_insights(user_id, year, month):
 def recompute_current_month(user_id):
     today = date.today()
     return compute_insights.delay(user_id, today.year, today.month)
+
+@shared_task
+def run_monthly_rewards():
+    for user in User.objects.all():
+        points = calculate_user_rewards(user)
+        print(f"Rewards calculated for user {user.username}: {points}")
