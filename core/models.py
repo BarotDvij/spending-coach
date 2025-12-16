@@ -25,7 +25,7 @@ class Transaction(models.Model):
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="budgets")
-    category = models.CharField(max_length=100, default="misc")   # ✅ same fix
+    category = models.CharField(max_length=100, default="misc")
     month = models.IntegerField()
     year = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -77,20 +77,48 @@ class RewardsLedger(models.Model):
     total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [models.Index(fields=["user", "year", "month"])]
+
+# Badge type choices
+BADGE_TYPES = [
+    ("milestone", "Milestone"),
+    ("streak", "Streak"),
+    ("achievement", "Achievement"),
+    ("monthly", "Monthly"),
+]
+
 class Badge(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
     name = models.CharField(max_length=100)
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES, default="milestone")
     points = models.IntegerField(default=0)
     year = models.IntegerField()
     month = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [models.Index(fields=["user", "badge_type", "created_at"])]
+        ordering = ["-created_at"]
+        unique_together = [["user", "name", "year", "month"]]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name} ({self.badge_type})"
+
 class Streak(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="streak")
     count = models.IntegerField(default=0)
     points = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        indexes = [models.Index(fields=["user", "year", "month", "type", "created_at"])]
+    def __str__(self):
+        return f"{self.user.username} - {self.count} streak"
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    total_points = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile - {self.total_points} points"
